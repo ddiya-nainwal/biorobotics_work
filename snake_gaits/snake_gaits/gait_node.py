@@ -2,26 +2,20 @@
 """
 Serpenoid gait node for snakelib (ROS2 Jazzy).
 
-Computes joint angles with the compound serpenoid equations
-(Tesch et al., "Parameterized and Scripted Gaits for Modular Snake Robots")
-and publishes them to the pybullet_interface.
+Computes joint angles with the compound serpenoid equations and publishes them to the pybullet_interface.
 
 Run (with the sim already launched):
     ros2 run snake_gaits gait_node --ros-args -p gait:=sidewinding
 Switch gait live:
     ros2 param set /gait_node gait rolling
 
-ASSUMPTION TO VERIFY: /snake/joint_commands uses sensor_msgs/JointState.
-Check with `ros2 topic list -t`. If it's a snakelib_msgs type, change the
-import, the create_publisher type, and the fields filled in _tick().
-"""
 import math
 
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
 
-# Starting-point parameters -- tune these in sim.
+
 # e_* = even-indexed joints, o_* = odd-indexed joints.
 # A: amplitude (rad), Om: spatial freq (rad/module), w: temporal freq (rad/s),
 # b: offset (rad), delta: phase between the two waves (rad)
