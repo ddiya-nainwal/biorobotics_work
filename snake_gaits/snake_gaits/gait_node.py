@@ -8,7 +8,7 @@ Run (with the sim already launched):
     ros2 run snake_gaits gait_node --ros-args -p gait:=sidewinding
 Switch gait live:
     ros2 param set /gait_node gait rolling
-
+"""
 import math
 
 import rclpy
