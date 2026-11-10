@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 """
-Serpenoid gait node for snakelib (ROS2 Jazzy).
-
-Computes joint angles with the compound serpenoid equations and publishes them to the pybullet_interface.
+Computes joint angles with the compound serpenoid equations and publishes them to the pybullet.
 
 Run (with the sim already launched):
     ros2 run snake_gaits gait_node --ros-args -p gait:=sidewinding
 Switch gait live:
     ros2 param set /gait_node gait rolling
 """
-import math
 
+import math
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
@@ -19,6 +17,9 @@ from sensor_msgs.msg import JointState
 # e_* = even-indexed joints, o_* = odd-indexed joints.
 # A: amplitude (rad), Om: spatial freq (rad/module), w: temporal freq (rad/s),
 # b: offset (rad), delta: phase between the two waves (rad)
+
+ANGLE_MAX = math.pi/2
+
 GAITS = {
     "sidewinding": dict(e_A=0.6, e_Om=0.8, e_w=2.0, e_b=0.0,
                         o_A=0.6, o_Om=0.8, o_w=2.0, o_b=0.0, delta=math.pi / 4),
@@ -28,7 +29,9 @@ GAITS = {
                                o_A=0.0, o_Om=0.0, o_w=0.0, o_b=0.0, delta=0.0),
     "linear_progression": dict(e_A=0.0, e_Om=0.0, e_w=0.0, e_b=0.0,
                                o_A=0.6, o_Om=1.2, o_w=2.0, o_b=0.0, delta=0.0),
-    # Static test: constant bend on even joints. Should form a smooth C-arc
+    "roll":               dict(e_A=0.0, e_Om=0.0, e_w=2.0, e_b=0.0,
+                               o_A=0.0, o_Om=0.0, o_w=2.0, o_b=0.0, delta=-math.pi/2, scale_by_modules=True), 
+ # Static test: constant bend on even joints. Should form a smooth C-arc
     # if the sign flip is right; a zig-zag means it's wrong.
     "sign_test":   dict(e_A=0.0, e_Om=0.0, e_w=0.0, e_b=0.3,
                         o_A=0.0, o_Om=0.0, o_w=0.0, o_b=0.0, delta=0.0),
@@ -81,7 +84,11 @@ class GaitNode(Node):
             return
 
         t = (self.get_clock().now() - self.t0).nanoseconds * 1e-9
-        p = GAITS[gait]
+        p = dict(GAITS[gait])
+        if p.get("scale_by_modules"):
+            n_mod = len(self.joint_names)
+            A = ANGLE_MAX * min(1.0, 0.18 * 16.0 / max(n_mod, 1))
+            p["e_A"] = p["o_A"] = A
 
         msg = JointState()
         msg.header.stamp = self.get_clock().now().to_msg()
